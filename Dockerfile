@@ -125,7 +125,6 @@ ARG PETA_RUN_FILE
 ARG HTTP_SERV=http://172.17.0.1:8000/installers
 
 COPY accept-eula.sh /
-COPY y2k22_patch-1.2.zip /
 
 # run the Petalinux installer
 RUN cd / && wget -q ${HTTP_SERV}/${PETA_RUN_FILE} && \
@@ -156,6 +155,7 @@ RUN \
   fi
 
 # apply 2021.2.1 Update
+
 RUN \
   if [ "$VIVADO_UPDATE" ] ; then \
   mkdir -p /vivado-installer && cd /vivado-installer/ && wget -q ${HTTP_SERV}/${VIVADO_UPDATE} && cd .. && \
@@ -169,6 +169,12 @@ RUN \
   fi
 
 # apply Vitis patch
+
+RUN \
+  if [ "$VIVADO_UPDATE" ] ; then \
+  COPY y2k22_patch-1.2.zip / ; \
+  fi
+
 RUN \
   if [ "$VIVADO_UPDATE" ] ; then \
   mv /y2k22_patch-1.2.zip /tools/Xilinx/ && cd /tools/Xilinx/ && unzip y2k22_patch-1.2.zip && \

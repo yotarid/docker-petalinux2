@@ -3,13 +3,20 @@
 # SPDX-FileCopyrightText: 2024, Max Wipfli <mail@maxwipfli.ch>
 # SPDX-License-Identifier: MIT
 
-# Default version 2021.2
-XILVER=${1:-2021.2}
+# Default version 2023.2
+# XILVER=${1:-2021.2} # Vivado 2021.2
+XILVER=${1:-2023.2} # Vivado 2023.2
+
 
 cd installers || exit
 
 # Check for Petalinux installer
-PLNX="petalinux-v${XILVER}-final-installer.run"
+if [ "${XILVER}" == "2021.2" ] ; then
+	PLNX="petalinux-v${XILVER}-final-installer.run" # for Vivado 2021.2
+fi
+if [ "${XILVER}" == "2023.2" ] ; then
+	PLNX="petalinux-v${XILVER}-10121855-installer.run" # for Vivado 2023.2
+fi
 if [ ! -f "$PLNX" ] ; then
     echo "$PLNX installer not found"
     cd ..
@@ -17,13 +24,24 @@ if [ ! -f "$PLNX" ] ; then
 fi
 
 # Check for Xilinx Unified installer (for Vivado)
-VIVADO_INSTALLER_GLOB=Xilinx_Unified_"${XILVER}"
-VIVADO_INSTALLER=$(find . -maxdepth 1 -name "${VIVADO_INSTALLER_GLOB}*" | tail -1)
-VIVADO_UPDATE="Xilinx_Vivado_Vitis_Update_2021.2.1_1219_1431.tar.gz"
-VIVADO_PATCH="y2k22_patch-1.2.zip"
+if [ "${XILVER}" == "2021.2" ] ; then
+	VIVADO_INSTALLER_GLOB=Xilinx_Unified_"${XILVER}" for Vivado 2021.2
+fi
+if [ "${XILVER}" == "2023.2" ] ; then
+	VIVADO_INSTALLER_GLOB=FPGAs_AdaptiveSoCs_Unified_"${XILVER}" # for Vivado 2023.2
+fi
 
-# Create dummy patch file in root directory (will be overwritten if required)
-echo "" > "../$VIVADO_PATCH"
+VIVADO_INSTALLER=$(find . -maxdepth 1 -name "${VIVADO_INSTALLER_GLOB}*" | tail -1)
+
+# only for 2021.2
+if [ "${XILVER}" == "2021.2" ] ; then
+	VIVADO_UPDATE="Xilinx_Vivado_Vitis_Update_2021.2.1_1219_1431.tar.gz"
+	VIVADO_PATCH="y2k22_patch-1.2.zip"
+	# Create dummy patch file in root directory (will be overwritten if required)
+	echo "" > "../$VIVADO_PATCH"	
+fi
+
+
 
 if [ "${VIVADO_INSTALLER}" ] ; then
     echo "Xilinx Unified installer found: ${VIVADO_INSTALLER}"
@@ -54,6 +72,9 @@ if [ "${VIVADO_INSTALLER}" ] ; then
     if [ "${XILVER}" == "2021.2" ] ; then
         INSTALL_VIVADO=("--build-arg" VIVADO_INSTALLER="${VIVADO_INSTALLER}" "--build-arg" VIVADO_UPDATE="${VIVADO_UPDATE}" "--build-arg" VIVADO_AGREE="3rdPartyEULA,XilinxEULA")
     fi
+    if [ "${XILVER}" == "2023.2" ] ; then
+        INSTALL_VIVADO=("--build-arg" VIVADO_INSTALLER="${VIVADO_INSTALLER}" "--build-arg" VIVADO_AGREE="3rdPartyEULA,XilinxEULA")
+    fi    
 else
     echo "Xilinx Unified installer not found."
     echo "Vivado will NOT be installed in the Docker image."
@@ -71,8 +92,11 @@ fi
 
 echo "Creating Docker image docker_petalinux2:$XILVER..."
 time docker build --build-arg USERNAME=petalinux --build-arg UID=$(id -u) --build-arg GID=$(id -g) --build-arg PETA_VERSION="${XILVER}" --build-arg PETA_RUN_FILE="${PLNX}" "${INSTALL_VIVADO[@]}" -t docker_petalinux2:"${XILVER}" .
-if [ -f "y2k22_patch-1.2.zip" ] ; then
-    rm "y2k22_patch-1.2.zip"
+
+if [ "${XILVER}" == "2021.2" ] ; then
+	if [ -f "y2k22_patch-1.2.zip" ] ; then
+	    rm "y2k22_patch-1.2.zip"
+	fi
 fi
 
 [ -n "$HTTPID" ] && kill "$HTTPID" && echo "Killed HTTP Server"
