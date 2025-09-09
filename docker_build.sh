@@ -3,10 +3,8 @@
 # SPDX-FileCopyrightText: 2024, Max Wipfli <mail@maxwipfli.ch>
 # SPDX-License-Identifier: MIT
 
-# Default version 2023.2
-# XILVER=${1:-2021.2} # Vivado 2021.2
-XILVER=${1:-2023.2} # Vivado 2023.2
-
+# Default version 2021.2
+XILVER=${1:-2021.2}
 
 cd installers || exit
 
