@@ -123,8 +123,10 @@ ARG PETA_RUN_FILE
 
 # The HTTP server to retrieve the files from.
 ARG HTTP_SERV=http://172.17.0.1:8000/installers
+ARG VIVADO_UPDATE
 
 COPY accept-eula.sh /
+
 
 # Stage y2k22_patch-1.2.zip into the build cache and include it in the image,
 # but only when building with AMD/Xilinx tools version 2021.2.
@@ -147,7 +149,6 @@ RUN cd / && wget -q ${HTTP_SERV}/${PETA_RUN_FILE} && \
 
 ARG VIVADO_INSTALLER
 ARG VIVADO_AGREE="XilinxEULA,3rdPartyEULA"
-ARG VIVADO_UPDATE
 
 COPY install_config.txt /vivado-config/
 
