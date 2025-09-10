@@ -9,11 +9,10 @@ XILVER=${1:-2021.2}
 cd installers || exit
 
 # Check for Petalinux installer
-if [ "${XILVER}" == "2021.2" ] ; then
-	PLNX="petalinux-v${XILVER}-final-installer.run" # for Vivado 2021.2
-fi
 if [ "${XILVER}" == "2023.2" ] ; then
 	PLNX="petalinux-v${XILVER}-10121855-installer.run" # for Vivado 2023.2
+else
+	PLNX="petalinux-v${XILVER}-final-installer.run" # for Vivado 2021.2
 fi
 if [ ! -f "$PLNX" ] ; then
     echo "$PLNX installer not found"
@@ -22,11 +21,10 @@ if [ ! -f "$PLNX" ] ; then
 fi
 
 # Check for Xilinx Unified installer (for Vivado)
-if [ "${XILVER}" == "2021.2" ] ; then
-	VIVADO_INSTALLER_GLOB=Xilinx_Unified_"${XILVER}" for Vivado 2021.2
-fi
 if [ "${XILVER}" == "2023.2" ] ; then
 	VIVADO_INSTALLER_GLOB=FPGAs_AdaptiveSoCs_Unified_"${XILVER}" # for Vivado 2023.2
+else
+	VIVADO_INSTALLER_GLOB=Xilinx_Unified_"${XILVER}" # for Vivado 2021.2
 fi
 
 VIVADO_INSTALLER=$(find . -maxdepth 1 -name "${VIVADO_INSTALLER_GLOB}*" | tail -1)
@@ -88,8 +86,14 @@ if ! ps -fC python3 | grep "http.server" > /dev/null ; then
     trap 'kill $HTTPID' EXIT QUIT SEGV INT HUP TERM ERR
 fi
 
+if [ "${XILVER}" == "2023.2" ] ; then
+	BASE_IMAGE="ubuntu:20.04" 
+else
+	BASE_IMAGE="ubuntu:18.04"
+fi
+
 echo "Creating Docker image docker_petalinux2:$XILVER..."
-time docker build --build-arg USERNAME=petalinux --build-arg UID=$(id -u) --build-arg GID=$(id -g) --build-arg PETA_VERSION="${XILVER}" --build-arg PETA_RUN_FILE="${PLNX}" "${INSTALL_VIVADO[@]}" -t docker_petalinux2:"${XILVER}" .
+time DOCKER_BUILDKIT=1 docker build --build-arg BASE_IMAGE="${BASE_IMAGE}" --build-arg USERNAME=petalinux --build-arg UID=$(id -u) --build-arg GID=$(id -g) --build-arg PETA_VERSION="${XILVER}" --build-arg PETA_RUN_FILE="${PLNX}" "${INSTALL_VIVADO[@]}" -t docker_petalinux2:"${XILVER}" .
 
 if [ "${XILVER}" == "2021.2" ] ; then
 	if [ -f "y2k22_patch-1.2.zip" ] ; then

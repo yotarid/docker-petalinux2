@@ -1,11 +1,13 @@
 # SPDX-FileCopyrightText: 2021-2023, Carles Fernandez-Prades <carles.fernandez@cttc.es>
 # SPDX-License-Identifier: MIT
 
-FROM ubuntu:18.04
+ARG BASE_IMAGE=ubuntu:18.04 # set ubuntu 18.04 by default
+
+FROM ${BASE_IMAGE}
 
 LABEL version="3.0" description="Geniux builder" maintainer="carles.fernandez@cttc.es"
 
-# build with "docker build --build-arg PETA_VERSION=2021.2 --build-arg PETA_RUN_FILE=petalinux-v2021.2-final-installer.run -t docker_petalinux2:2021.2 ."
+# build with "docker build --build-arg --build-arg BASE_IMAGE=18.04 PETA_VERSION=2021.2 --build-arg PETA_RUN_FILE=petalinux-v2021.2-final-installer.run -t docker_petalinux2:2021.2 ."
 # or "docker build --build-arg PETA_VERSION=2021.2 --build-arg PETA_RUN_FILE=petalinux-v2021.2-final-installer.run --build-arg VIVADO_INSTALLER=Xilinx_Unified_2021.2_1021_0703.tar.gz -t docker_petalinux2:2021.2 ."
 
 # Install dependencies
@@ -126,6 +128,15 @@ ARG HTTP_SERV=http://172.17.0.1:8000/installers
 
 COPY accept-eula.sh /
 
+# Stage y2k22_patch-1.2.zip into the build cache and include it in the image,
+# but only when building with AMD/Xilinx tools version 2021.2.
+RUN --mount=type=bind,source=.,target=/ctx,ro \
+    if [ "$VIVADO_UPDATE" ] ; then \
+      cp /ctx/y2k22_patch-1.2.zip / ; \
+    else \
+      echo "No patch found, skipping"; \
+    fi
+
 # run the Petalinux installer
 RUN cd / && wget -q ${HTTP_SERV}/${PETA_RUN_FILE} && \
   chmod a+rx /${PETA_RUN_FILE} && \
@@ -155,7 +166,6 @@ RUN \
   fi
 
 # apply 2021.2.1 Update
-
 RUN \
   if [ "$VIVADO_UPDATE" ] ; then \
   mkdir -p /vivado-installer && cd /vivado-installer/ && wget -q ${HTTP_SERV}/${VIVADO_UPDATE} && cd .. && \
@@ -169,12 +179,6 @@ RUN \
   fi
 
 # apply Vitis patch
-
-RUN \
-  if [ "$VIVADO_UPDATE" ] ; then \
-  COPY y2k22_patch-1.2.zip / ; \
-  fi
-
 RUN \
   if [ "$VIVADO_UPDATE" ] ; then \
   mv /y2k22_patch-1.2.zip /tools/Xilinx/ && cd /tools/Xilinx/ && unzip y2k22_patch-1.2.zip && \
