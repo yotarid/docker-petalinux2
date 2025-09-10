@@ -4,7 +4,12 @@
 #
 # Run from a PetaLinux project directory
 
-latest=$(docker image list | grep ^docker_petalinux2 | awk '{ print $2 }' | sort | tail -1)
+# allow docker image selection
+if [ -n "$1" ]; then
+	latest="$1"
+else
+	latest=$(docker image list | grep ^docker_petalinux2 | awk '{ print $2 }' | sort | tail -1)
+fi
 echo "Starting petalinux2:$latest"
 mkdir -p "$PWD"/tftpboot
 
